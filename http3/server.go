@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alta/insecure"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/internal/handshake"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
@@ -210,7 +211,8 @@ func (s *Server) ListenAndServe() error {
 func (s *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	var err error
 	certs := make([]tls.Certificate, 1)
-	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	// certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	certs[0], err = insecure.Cert()
 	if err != nil {
 		return err
 	}
@@ -670,7 +672,8 @@ func ListenAndServe(addr, certFile, keyFile string, handler http.Handler) error 
 	// Load certs
 	var err error
 	certs := make([]tls.Certificate, 1)
-	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	certs[0], err = insecure.Cert()
+	// certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return err
 	}

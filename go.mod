@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/alta/insecure v0.0.0-20210905232608-f5263498f0b2 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
