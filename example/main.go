@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -144,8 +145,10 @@ func main() {
 	www := flag.String("www", "", "www data")
 	tcp := flag.Bool("tcp", false, "also listen on TCP")
 	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
-	flag.Parse()
+	retry := flag.Bool("retry", false, "enable retry")
+	isDropFirstInitialWithRetryToken := flag.Bool("isDropFirstInitialWithRetryToken", false, "drop the first initial with retry token packet for test")
 
+	flag.Parse()
 	logger := utils.DefaultLogger
 
 	if *verbose {
@@ -161,6 +164,15 @@ func main() {
 
 	handler := setupHandler(*www)
 	quicConf := &quic.Config{}
+	quicConf.RequireAddressValidation = func(net.Addr) bool { return *retry }
+
+	// -->init
+	//			<--retry + token
+	//-->init + token  drop this packet
+	quicConf.IsDropFirstInitialWithretryToken = *isDropFirstInitialWithRetryToken
+	if quicConf.IsDropFirstInitialWithretryToken { //如果打开了丢弃第一个携带token的initial报文， 则默认打开地址验证
+		quicConf.RequireAddressValidation = func(net.Addr) bool { return true }
+	}
 	if *enableQlog {
 		quicConf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
 			filename := fmt.Sprintf("server_%x.qlog", connID)
@@ -181,7 +193,8 @@ func main() {
 			var err error
 			if *tcp {
 				certFile, keyFile := testdata.GetCertificatePaths()
-				err = http3.ListenAndServe(bCap, certFile, keyFile, handler)
+				// err = http3.ListenAndServe(bCap, certFile, keyFile, handler)
+				err = http3.ListenAndServeWithQuicConf(bCap, certFile, keyFile, handler, quicConf)
 			} else {
 				server := http3.Server{
 					Handler:    handler,

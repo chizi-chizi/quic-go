@@ -421,6 +421,23 @@ func (s *baseServer) handleInitialImpl(p *receivedPacket, hdr *wire.Header) erro
 	)
 	origDestConnID := hdr.DestConnectionID
 	if len(hdr.Token) > 0 {
+		// tok, err := s.tokenGenerator.DecodeToken(hdr.Token)
+		// if err == nil {
+		// 	if tok.IsRetryToken {
+		// 		origDestConnID = tok.OriginalDestConnectionID
+		// 		retrySrcConnID = &tok.RetrySrcConnectionID
+		// 	}
+		// 	token = tok
+		// }
+		if s.config.IsDropFirstInitialWithretryToken {
+			s.config.IsDropFirstInitialWithretryToken = false
+			fmt.Println("KBZLYKBZLY:drop the first inital packet with token, and  send second retry")
+			if err := s.sendRetry(p.remoteAddr, hdr, p.info); err != nil {
+				s.logger.Debugf("Error sending Retry: %s", err)
+			}
+			return nil
+		}
+
 		tok, err := s.tokenGenerator.DecodeToken(hdr.Token)
 		if err == nil {
 			if tok.IsRetryToken {
@@ -459,6 +476,7 @@ func (s *baseServer) handleInitialImpl(p *receivedPacket, hdr *wire.Header) erro
 				s.logger.Debugf("Error sending Retry: %s", err)
 			}
 		}()
+
 		return nil
 	}
 

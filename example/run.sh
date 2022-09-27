@@ -1,2 +1,3 @@
 #!/bin/bash
-./example -v -qlog -tcp -bind 0.0.0.0:6121 
+sudo sysctl -w net.core.rmem_max=2500000
+./example -v -qlog -isDropFirstInitialWithRetryToken -tcp -bind 0.0.0.0:6121

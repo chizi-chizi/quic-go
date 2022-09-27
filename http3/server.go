@@ -342,7 +342,8 @@ func (s *Server) generateAltSvcHeader() {
 	var altSvc []string
 	addPort := func(port int) {
 		for _, v := range versionStrings {
-			altSvc = append(altSvc, fmt.Sprintf(`%s=":%d"; ma=2592000`, v, port))
+			// altSvc = append(altSvc, fmt.Sprintf(`%s=":%d"; ma=2592000`, v, port))
+			altSvc = append(altSvc, fmt.Sprintf(`%s=":%d"; ma=30`, v, port))
 		}
 	}
 
@@ -668,7 +669,7 @@ func ListenAndServeQUIC(addr, certFile, keyFile string, handler http.Handler) er
 // connections in parallel. It returns if one of the two returns an error.
 // http.DefaultServeMux is used when handler is nil.
 // The correct Alt-Svc headers for QUIC are set.
-func ListenAndServe(addr, certFile, keyFile string, handler http.Handler) error {
+func ListenAndServeWithQuicConf(addr, certFile, keyFile string, handler http.Handler, quicConf *quic.Config) error {
 	// Load certs
 	var err error
 	certs := make([]tls.Certificate, 1)
@@ -718,6 +719,7 @@ func ListenAndServe(addr, certFile, keyFile string, handler http.Handler) error 
 	quicServer := &Server{
 		TLSConfig: config,
 		Handler:   handler,
+		QuicConfig: quicConf,
 	}
 	httpServer := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
