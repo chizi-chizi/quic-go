@@ -136,6 +136,7 @@ func populateConfig(config *Config, defaultConnIDLen int) *Config {
 		DisablePathMTUDiscovery:          config.DisablePathMTUDiscovery,
 		DisableVersionNegotiationPackets: config.DisableVersionNegotiationPackets,
 		Tracer:                           config.Tracer,
-		IsDropFirstInitialWithretryToken:   config.IsDropFirstInitialWithretryToken,
+		IsDropFirstInitialWithretryToken: config.IsDropFirstInitialWithretryToken,
+		OnlySendInitial:                  config.OnlySendInitial,
 	}
 }

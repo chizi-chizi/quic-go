@@ -320,6 +320,7 @@ type Config struct {
 	EnableDatagrams                  bool
 	Tracer                           logging.Tracer
 	IsDropFirstInitialWithretryToken bool
+	OnlySendInitial					bool
 }
 
 // ConnectionState records basic details about a QUIC connection

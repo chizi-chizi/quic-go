@@ -624,6 +624,17 @@ runLoop:
 				// nothing to see here.
 			case <-sendQueueAvailable:
 			case firstPacket := <-s.receivedPackets:
+				if s.config.OnlySendInitial {
+					// fmt.Println("KBZLY==>shutdown...")
+					// s.shutdown()
+					s.closeOnce.Do(func() {
+						s.closeChan <- closeError{err: nil, immediate: false, remote: false}
+					})
+					// s.closeChan <- closeError{err: nil, immediate: false, remote: false}
+					continue
+					// <-s.ctx.Done()
+					// fmt.Println("KBZLY==>connect Done")
+				}
 				wasProcessed := s.handlePacketImpl(firstPacket)
 				// Don't set timers and send packets if the packet made us close the connection.
 				select {

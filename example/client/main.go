@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
@@ -21,21 +22,15 @@ import (
 	"github.com/lucas-clemente/quic-go/qlog"
 )
 
-func main() {
-	verbose := flag.Bool("v", false, "verbose")
-	quiet := flag.Bool("q", false, "don't print the data")
-	keyLogFile := flag.String("keylog", "", "key log file")
-	insecure := flag.Bool("insecure", false, "skip certificate verification")
-	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
-	flag.Parse()
-	urls := flag.Args()
+var wait sync.WaitGroup
 
+func oneTest(pool *x509.CertPool, verbose, quiet, insecure, enableQlog, onlySendInitial *bool, keyLogFile *string, urls []string) {
 	logger := utils.DefaultLogger
 
 	if *verbose {
 		logger.SetLogLevel(utils.LogLevelDebug)
 	} else {
-		logger.SetLogLevel(utils.LogLevelInfo)
+		logger.SetLogLevel(utils.LogLevelError)
 	}
 	logger.SetLogTimeFormat("")
 
@@ -49,13 +44,12 @@ func main() {
 		keyLog = f
 	}
 
-	pool, err := x509.SystemCertPool()
-	if err != nil {
-		log.Fatal(err)
-	}
-	testdata.AddRootCA(pool)
+
+	
 
 	var qconf quic.Config
+	qconf.OnlySendInitial = *onlySendInitial
+	// qconf.HandshakeIdleTimeout = 2 * time.Second
 	if *enableQlog {
 		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
 			filename := fmt.Sprintf("client_%x.qlog", connID)
@@ -78,16 +72,19 @@ func main() {
 	defer roundTripper.Close()
 	hclient := &http.Client{
 		Transport: roundTripper,
+		Timeout:   1 * time.Second,
 	}
-
 	var wg sync.WaitGroup
 	wg.Add(len(urls))
+
 	for _, addr := range urls {
 		logger.Infof("GET %s", addr)
 		go func(addr string) {
 			rsp, err := hclient.Get(addr)
 			if err != nil {
-				log.Fatal(err)
+				wait.Done()
+				return
+				// log.Fatal(err)
 			}
 			logger.Infof("Got response for %s: %#v", addr, rsp)
 
@@ -106,4 +103,34 @@ func main() {
 		}(addr)
 	}
 	wg.Wait()
+	wait.Done()
+}
+
+func main() {
+	verbose := flag.Bool("v", false, "verbose")
+	quiet := flag.Bool("q", false, "don't print the data")
+	keyLogFile := flag.String("keylog", "", "key log file")
+	insecure := flag.Bool("insecure", false, "skip certificate verification")
+	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
+	onlySendInitial := flag.Bool("onlySendInitial", false, "only send init packet for test")
+	repeatCnt := flag.Int("repeatCnt", 1, "repeat test count")
+	flag.Parse()
+	urls := flag.Args()
+
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Fatal(err)
+	}
+	testdata.AddRootCA(pool)
+
+	fmt.Println("send initial packet begin")
+
+	wait.Add(*repeatCnt)
+	for i := 0; i < *repeatCnt; i++ {
+		go oneTest(pool, verbose, quiet, insecure, enableQlog, onlySendInitial, keyLogFile, urls)
+	}
+	wait.Wait()
+	fmt.Printf("send %d initial packet finished!!!, Please CTRL+C to exit\n", *repeatCnt)
+	// var tmp chan int
+	// <-tmp
 }
