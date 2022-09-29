@@ -53,6 +53,7 @@ type quicConn interface {
 	run() error
 	destroy(error)
 	shutdown()
+	sendConnectionClose(e error) ([]byte, error)
 }
 
 // A Listener of QUIC
@@ -535,6 +536,19 @@ func (s *baseServer) handleInitialImpl(p *receivedPacket, hdr *wire.Header) erro
 		return conn
 	}); !added {
 		return nil
+	}
+	if len(hdr.Token) > 0 {
+		if s.config.IsSendCCWhenServerReceiveInitialWithToken {
+			fmt.Println("KBZLYKBZLY:when receive initial + token, server will send CONNECT_CLOSE frame")
+			//TODO
+
+			connClosePacket, err := conn.sendConnectionClose(&TransportError{})
+			if err != nil {
+				s.logger.Debugf("Error sending CONNECTION_CLOSE: %s", err)
+			}
+			_, err = s.conn.WritePacket(connClosePacket, p.remoteAddr, nil)
+			return err
+		}
 	}
 	go conn.run()
 	go s.handleNewConn(conn)

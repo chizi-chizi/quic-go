@@ -317,10 +317,11 @@ type Config struct {
 	// It has no effect for a client.
 	DisableVersionNegotiationPackets bool
 	// Enable QUIC datagram support (RFC 9221).
-	EnableDatagrams                  bool
-	Tracer                           logging.Tracer
-	IsDropFirstInitialWithretryToken bool
-	OnlySendInitial					bool
+	EnableDatagrams                           bool
+	Tracer                                    logging.Tracer
+	IsDropFirstInitialWithretryToken          bool
+	OnlySendInitial                           bool
+	IsSendCCWhenServerReceiveInitialWithToken bool
 }
 
 // ConnectionState records basic details about a QUIC connection

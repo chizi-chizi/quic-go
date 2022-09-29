@@ -147,6 +147,7 @@ func main() {
 	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
 	retry := flag.Bool("retry", false, "enable retry")
 	isDropFirstInitialWithRetryToken := flag.Bool("isDropFirstInitialWithRetryToken", false, "drop the first initial with retry token packet for test")
+	isSendCCWhenServerReceiveInitialWithToken := flag.Bool("isSendCCWhenServerReceiveInitialWithToken", false, "when server receiver initial with retry token, then reply CONNECT_CLOSE frame for test")
 
 	flag.Parse()
 	logger := utils.DefaultLogger
@@ -168,11 +169,25 @@ func main() {
 
 	// -->init
 	//			<--retry + token
-	//-->init + token  drop this packet
+	//-->init + token  
+	//			drop this packet and 
+	//			<--retry
+	// ??
 	quicConf.IsDropFirstInitialWithretryToken = *isDropFirstInitialWithRetryToken
 	if quicConf.IsDropFirstInitialWithretryToken { //如果打开了丢弃第一个携带token的initial报文， 则默认打开地址验证
 		quicConf.RequireAddressValidation = func(net.Addr) bool { return true }
 	}
+
+	// -->init
+	//			<--retry + token
+	//-->init + token  
+	//			<--CONNECT_CLOSE
+	// does reconnect?
+	quicConf.IsSendCCWhenServerReceiveInitialWithToken = *isSendCCWhenServerReceiveInitialWithToken
+	if quicConf.IsSendCCWhenServerReceiveInitialWithToken { //此时默认打开地址验证
+		quicConf.RequireAddressValidation = func(net.Addr) bool { return true }
+	}
+
 	if *enableQlog {
 		quicConf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
 			filename := fmt.Sprintf("server_%x.qlog", connID)
