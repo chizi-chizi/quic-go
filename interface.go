@@ -322,6 +322,7 @@ type Config struct {
 	IsDropFirstInitialWithretryToken          bool
 	OnlySendInitial                           bool
 	IsSendCCWhenServerReceiveInitialWithToken bool
+	ConnFinishThenSendInitial                 bool
 }
 
 // ConnectionState records basic details about a QUIC connection

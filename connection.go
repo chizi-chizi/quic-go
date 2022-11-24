@@ -53,6 +53,7 @@ type streamManager interface {
 
 type cryptoStreamHandler interface {
 	RunHandshake()
+	RunHandshakeWithConfig(*handshake.TestConfig)
 	ChangeConnectionID(protocol.ConnectionID)
 	SetLargest1RTTAcked(protocol.PacketNumber) error
 	SetHandshakeConfirmed()
@@ -554,7 +555,9 @@ func (s *connection) run() error {
 	handshaking := make(chan struct{})
 	go func() {
 		defer close(handshaking)
-		s.cryptoStreamHandler.RunHandshake()
+		testConfig := &handshake.TestConfig{}
+		testConfig.ConnFinishThenSendInitial = s.config.ConnFinishThenSendInitial
+		s.cryptoStreamHandler.RunHandshakeWithConfig(testConfig)
 	}()
 	go func() {
 		if err := s.sendQueue.Run(); err != nil {

@@ -74,6 +74,7 @@ type handshakeRunner interface {
 // CryptoSetup handles the handshake and protecting / unprotecting packets
 type CryptoSetup interface {
 	RunHandshake()
+	RunHandshakeWithConfig(*TestConfig)
 	io.Closer
 	ChangeConnectionID(protocol.ConnectionID)
 	GetSessionTicket() ([]byte, error)

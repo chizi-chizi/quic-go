@@ -24,10 +24,19 @@ import (
 
 var wait sync.WaitGroup
 
-func oneTest(pool *x509.CertPool, verbose, quiet, insecure, enableQlog, onlySendInitial *bool, keyLogFile *string, urls []string) {
+type Param struct {
+	Verbose                   bool
+	Quiet                     bool
+	Insecure                  bool
+	EnableQlog                bool
+	ConnFinishThenSendInitial bool
+	OnlySendInitial           bool
+}
+
+func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string) {
 	logger := utils.DefaultLogger
 
-	if *verbose {
+	if param.Verbose {
 		logger.SetLogLevel(utils.LogLevelDebug)
 	} else {
 		logger.SetLogLevel(utils.LogLevelError)
@@ -44,13 +53,10 @@ func oneTest(pool *x509.CertPool, verbose, quiet, insecure, enableQlog, onlySend
 		keyLog = f
 	}
 
-
-	
-
 	var qconf quic.Config
-	qconf.OnlySendInitial = *onlySendInitial
+	qconf.OnlySendInitial = param.OnlySendInitial
 	// qconf.HandshakeIdleTimeout = 2 * time.Second
-	if *enableQlog {
+	if param.EnableQlog {
 		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
 			filename := fmt.Sprintf("client_%x.qlog", connID)
 			f, err := os.Create(filename)
@@ -64,7 +70,7 @@ func oneTest(pool *x509.CertPool, verbose, quiet, insecure, enableQlog, onlySend
 	roundTripper := &http3.RoundTripper{
 		TLSClientConfig: &tls.Config{
 			RootCAs:            pool,
-			InsecureSkipVerify: *insecure,
+			InsecureSkipVerify: param.Insecure,
 			KeyLogWriter:       keyLog,
 		},
 		QuicConfig: &qconf,
@@ -93,7 +99,7 @@ func oneTest(pool *x509.CertPool, verbose, quiet, insecure, enableQlog, onlySend
 			if err != nil {
 				log.Fatal(err)
 			}
-			if *quiet {
+			if param.Quiet {
 				logger.Infof("Response Body: %d bytes", body.Len())
 			} else {
 				logger.Infof("Response Body:")
@@ -113,6 +119,7 @@ func main() {
 	insecure := flag.Bool("insecure", false, "skip certificate verification")
 	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
 	onlySendInitial := flag.Bool("onlySendInitial", false, "only send init packet for test")
+	connFinishThenSendInitial := flag.Bool("connFinishThenSendInitial", false, "when connection build finished then send init packet for test")
 	repeatCnt := flag.Int("repeatCnt", 1, "repeat test count")
 	flag.Parse()
 	urls := flag.Args()
@@ -123,14 +130,22 @@ func main() {
 	}
 	testdata.AddRootCA(pool)
 
-	fmt.Println("send initial packet begin")
+	// fmt.Println("send initial packet begin")
 
+	param := Param{
+		Verbose:                   *verbose,
+		Quiet:                     *quiet,
+		Insecure:                  *insecure,
+		EnableQlog:                *enableQlog,
+		OnlySendInitial:           *onlySendInitial,
+		ConnFinishThenSendInitial: *connFinishThenSendInitial,
+	}
 	wait.Add(*repeatCnt)
 	for i := 0; i < *repeatCnt; i++ {
-		go oneTest(pool, verbose, quiet, insecure, enableQlog, onlySendInitial, keyLogFile, urls)
+		go oneTest(pool, param, keyLogFile, urls)
 	}
 	wait.Wait()
-	fmt.Printf("send %d initial packet finished!!!, Please CTRL+C to exit\n", *repeatCnt)
+	// fmt.Printf("send %d initial packet finished!!!, Please CTRL+C to exit\n", *repeatCnt)
 	// var tmp chan int
 	// <-tmp
 }

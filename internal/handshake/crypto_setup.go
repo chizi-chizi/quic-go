@@ -36,6 +36,11 @@ const (
 	typeFinished            messageType = 20
 )
 
+type TestConfig struct {
+	ConnFinishThenSendInitial       bool
+	ConnFinishThenSendInitialPktNum int
+}
+
 func (m messageType) String() string {
 	switch m {
 	case typeClientHello:
@@ -298,16 +303,34 @@ func (h *cryptoSetup) SetLargest1RTTAcked(pn protocol.PacketNumber) error {
 	return h.aead.SetLargestAcked(pn)
 }
 
-func (h *cryptoSetup) RunHandshake() {
+func (h *cryptoSetup) RunHandshakeWithConfig(testConfig *TestConfig) {
 	// Handle errors that might occur when HandleData() is called.
+
 	handshakeComplete := make(chan struct{})
 	handshakeErrChan := make(chan error, 1)
 	go func() {
 		defer close(h.handshakeDone)
-		if err := h.conn.Handshake(); err != nil {
-			handshakeErrChan <- err
-			return
+		if testConfig.ConnFinishThenSendInitial {
+			for i := 0; i < testConfig.ConnFinishThenSendInitialPktNum; i++ {
+				fmt.Printf("connect %d \n", i)
+				if err := h.conn.Handshake(); err != nil {
+					handshakeErrChan <- err
+					fmt.Printf("hand shake error:%s\n", err.Error())
+					return
+				}
+				time.Sleep(1 * time.Second)
+			}
+		} else {
+			if err := h.conn.Handshake(); err != nil {
+				handshakeErrChan <- err
+				fmt.Printf("hand shake error:%s\n", err.Error())
+				return
+			}
 		}
+		// if err := h.conn.Handshake(); err != nil {
+		// 	handshakeErrChan <- err
+		// 	return
+		// }
 		close(handshakeComplete)
 	}()
 
@@ -334,7 +357,9 @@ func (h *cryptoSetup) RunHandshake() {
 		h.onError(alert, handshakeErr.Error())
 	}
 }
-
+func (h *cryptoSetup) RunHandshake() {
+	h.RunHandshakeWithConfig(nil)
+}
 func (h *cryptoSetup) onError(alert uint8, message string) {
 	var err error
 	if alert == 0 {
