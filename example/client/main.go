@@ -25,12 +25,13 @@ import (
 var wait sync.WaitGroup
 
 type Param struct {
-	Verbose                   bool
-	Quiet                     bool
-	Insecure                  bool
-	EnableQlog                bool
-	ConnFinishThenSendInitial bool
-	OnlySendInitial           bool
+	Verbose                         bool
+	Quiet                           bool
+	Insecure                        bool
+	EnableQlog                      bool
+	ConnFinishThenSendInitial       bool
+	OnlySendInitial                 bool
+	ConnFinishThenSendInitialPktNum int
 }
 
 func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string) {
@@ -55,6 +56,8 @@ func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string
 
 	var qconf quic.Config
 	qconf.OnlySendInitial = param.OnlySendInitial
+	qconf.ConnFinishThenSendInitial = param.ConnFinishThenSendInitial
+	qconf.ConnFinishThenSendInitialPktNum = param.ConnFinishThenSendInitialPktNum
 	// qconf.HandshakeIdleTimeout = 2 * time.Second
 	if param.EnableQlog {
 		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
@@ -120,6 +123,7 @@ func main() {
 	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
 	onlySendInitial := flag.Bool("onlySendInitial", false, "only send init packet for test")
 	connFinishThenSendInitial := flag.Bool("connFinishThenSendInitial", false, "when connection build finished then send init packet for test")
+	connFinishThenSendInitialPktNum := flag.Int("connFinishThenSendInitialPktNum", 1, "send init packet num")
 	repeatCnt := flag.Int("repeatCnt", 1, "repeat test count")
 	flag.Parse()
 	urls := flag.Args()
@@ -133,12 +137,13 @@ func main() {
 	// fmt.Println("send initial packet begin")
 
 	param := Param{
-		Verbose:                   *verbose,
-		Quiet:                     *quiet,
-		Insecure:                  *insecure,
-		EnableQlog:                *enableQlog,
-		OnlySendInitial:           *onlySendInitial,
-		ConnFinishThenSendInitial: *connFinishThenSendInitial,
+		Verbose:                         *verbose,
+		Quiet:                           *quiet,
+		Insecure:                        *insecure,
+		EnableQlog:                      *enableQlog,
+		OnlySendInitial:                 *onlySendInitial,
+		ConnFinishThenSendInitial:       *connFinishThenSendInitial,
+		ConnFinishThenSendInitialPktNum: *connFinishThenSendInitialPktNum,
 	}
 	wait.Add(*repeatCnt)
 	for i := 0; i < *repeatCnt; i++ {

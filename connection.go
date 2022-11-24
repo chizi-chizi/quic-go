@@ -557,6 +557,7 @@ func (s *connection) run() error {
 		defer close(handshaking)
 		testConfig := &handshake.TestConfig{}
 		testConfig.ConnFinishThenSendInitial = s.config.ConnFinishThenSendInitial
+		testConfig.ConnFinishThenSendInitialPktNum = s.config.ConnFinishThenSendInitialPktNum
 		s.cryptoStreamHandler.RunHandshakeWithConfig(testConfig)
 	}()
 	go func() {

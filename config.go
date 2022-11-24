@@ -139,6 +139,7 @@ func populateConfig(config *Config, defaultConnIDLen int) *Config {
 		IsDropFirstInitialWithretryToken:          config.IsDropFirstInitialWithretryToken,
 		OnlySendInitial:                           config.OnlySendInitial,
 		ConnFinishThenSendInitial:                 config.ConnFinishThenSendInitial,
+		ConnFinishThenSendInitialPktNum:           config.ConnFinishThenSendInitialPktNum,
 		IsSendCCWhenServerReceiveInitialWithToken: config.IsSendCCWhenServerReceiveInitialWithToken,
 	}
 }

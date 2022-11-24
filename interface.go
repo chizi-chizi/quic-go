@@ -323,6 +323,7 @@ type Config struct {
 	OnlySendInitial                           bool
 	IsSendCCWhenServerReceiveInitialWithToken bool
 	ConnFinishThenSendInitial                 bool
+	ConnFinishThenSendInitialPktNum           int
 }
 
 // ConnectionState records basic details about a QUIC connection
