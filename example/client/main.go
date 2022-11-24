@@ -32,9 +32,11 @@ type Param struct {
 	ConnFinishThenSendInitial       bool
 	OnlySendInitial                 bool
 	ConnFinishThenSendInitialPktNum int
+	MaxIdleTimeout                  time.Duration
 }
 
 func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string) {
+	defer wait.Done()
 	logger := utils.DefaultLogger
 
 	if param.Verbose {
@@ -42,7 +44,7 @@ func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string
 	} else {
 		logger.SetLogLevel(utils.LogLevelError)
 	}
-	logger.SetLogTimeFormat("")
+	logger.SetLogTimeFormat(time.Stamp)
 
 	var keyLog io.Writer
 	if len(*keyLogFile) > 0 {
@@ -58,6 +60,7 @@ func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string
 	qconf.OnlySendInitial = param.OnlySendInitial
 	qconf.ConnFinishThenSendInitial = param.ConnFinishThenSendInitial
 	qconf.ConnFinishThenSendInitialPktNum = param.ConnFinishThenSendInitialPktNum
+	qconf.MaxIdleTimeout = param.MaxIdleTimeout
 	// qconf.HandshakeIdleTimeout = 2 * time.Second
 	if param.EnableQlog {
 		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
@@ -103,16 +106,17 @@ func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string
 				log.Fatal(err)
 			}
 			if param.Quiet {
-				logger.Infof("Response Body: %d bytes", body.Len())
+				fmt.Printf("Response Body: %d bytes", body.Len())
 			} else {
-				logger.Infof("Response Body:")
-				logger.Infof("%s", body.Bytes())
+				fmt.Printf("Response Body:")
+				fmt.Printf("%s\n", body.Bytes())
 			}
 			wg.Done()
 		}(addr)
 	}
 	wg.Wait()
-	wait.Done()
+
+	// defer wait.Done()
 }
 
 func main() {
@@ -125,6 +129,7 @@ func main() {
 	connFinishThenSendInitial := flag.Bool("connFinishThenSendInitial", false, "when connection build finished then send init packet for test")
 	connFinishThenSendInitialPktNum := flag.Int("connFinishThenSendInitialPktNum", 1, "send init packet num")
 	repeatCnt := flag.Int("repeatCnt", 1, "repeat test count")
+	maxIdleTimeout := flag.Duration("maxIdleTimeout", 30*time.Second, "max_idle_timeout")
 	flag.Parse()
 	urls := flag.Args()
 
@@ -144,6 +149,7 @@ func main() {
 		OnlySendInitial:                 *onlySendInitial,
 		ConnFinishThenSendInitial:       *connFinishThenSendInitial,
 		ConnFinishThenSendInitialPktNum: *connFinishThenSendInitialPktNum,
+		MaxIdleTimeout:                  *maxIdleTimeout,
 	}
 	wait.Add(*repeatCnt)
 	for i := 0; i < *repeatCnt; i++ {

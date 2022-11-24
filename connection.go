@@ -553,6 +553,7 @@ func (s *connection) run() error {
 	s.timer = utils.NewTimer()
 
 	handshaking := make(chan struct{})
+	testing := make(chan struct{})
 	go func() {
 		defer close(handshaking)
 		testConfig := &handshake.TestConfig{}
@@ -565,7 +566,13 @@ func (s *connection) run() error {
 			s.destroyImpl(err)
 		}
 	}()
-
+	go func() {
+		defer close(testing)
+		for {
+			fmt.Println("for test, max_idle_timeout:", s.idleTimeout)
+			time.Sleep(time.Second)
+		}
+	}()
 	if s.perspective == protocol.PerspectiveClient {
 		select {
 		case zeroRTTParams := <-s.clientHelloWritten:
@@ -723,6 +730,7 @@ runLoop:
 
 	s.cryptoStreamHandler.Close()
 	<-handshaking
+	<-testing
 	s.handleCloseError(&closeErr)
 	if e := (&errCloseForRecreating{}); !errors.As(closeErr.err, &e) && s.tracer != nil {
 		s.tracer.Close()
@@ -1558,6 +1566,11 @@ func (s *connection) closeLocal(e error) {
 		if e == nil {
 			s.logger.Infof("Closing connection.")
 		} else {
+			// funcName, file, line, _ := runtime.Caller(0)
+			// s.logger.Infof("KBZLY begin,funcName:%s, file:%s:%d\n", runtime.FuncForPC(funcName).Name(), file, line)
+			// s.logger.Infof("%s\n", debug.Stack())
+			// fmt.Printf("KBZLY end\n")
+
 			s.logger.Errorf("Closing connection with error: %s", e)
 		}
 		s.closeChan <- closeError{err: e, immediate: false, remote: false}

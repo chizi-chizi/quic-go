@@ -323,7 +323,6 @@ func (h *cryptoSetup) RunHandshakeWithConfig(testConfig *TestConfig) {
 					fmt.Printf("hand shake error:%s\n", err.Error())
 					return
 				}
-				time.Sleep(1 * time.Second)
 			}
 		}
 		// if err := h.conn.Handshake(); err != nil {
