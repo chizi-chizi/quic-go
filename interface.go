@@ -250,7 +250,8 @@ type Config struct {
 	// This value only applies after the handshake has completed.
 	// If the timeout is exceeded, the connection is closed.
 	// If this value is zero, the timeout is set to 30 seconds.
-	MaxIdleTimeout time.Duration
+	MaxIdleTimeout        time.Duration
+	ForMaxIdleTimeoutTest bool
 	// RequireAddressValidation determines if a QUIC Retry packet is sent.
 	// This allows the server to verify the client's address, at the cost of increasing the handshake latency by 1 RTT.
 	// See https://datatracker.ietf.org/doc/html/rfc9000#section-8 for details.

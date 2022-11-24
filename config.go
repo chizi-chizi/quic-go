@@ -117,6 +117,7 @@ func populateConfig(config *Config, defaultConnIDLen int) *Config {
 		Versions:                                  versions,
 		HandshakeIdleTimeout:                      handshakeIdleTimeout,
 		MaxIdleTimeout:                            idleTimeout,
+		ForMaxIdleTimeoutTest:                     config.ForMaxIdleTimeoutTest,
 		MaxTokenAge:                               config.MaxTokenAge,
 		MaxRetryTokenAge:                          config.MaxRetryTokenAge,
 		RequireAddressValidation:                  config.RequireAddressValidation,

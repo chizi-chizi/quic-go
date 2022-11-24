@@ -33,6 +33,7 @@ type Param struct {
 	OnlySendInitial                 bool
 	ConnFinishThenSendInitialPktNum int
 	MaxIdleTimeout                  time.Duration
+	ForMaxIdleTimeoutTest           bool
 }
 
 func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string) {
@@ -61,6 +62,7 @@ func oneTest(pool *x509.CertPool, param Param, keyLogFile *string, urls []string
 	qconf.ConnFinishThenSendInitial = param.ConnFinishThenSendInitial
 	qconf.ConnFinishThenSendInitialPktNum = param.ConnFinishThenSendInitialPktNum
 	qconf.MaxIdleTimeout = param.MaxIdleTimeout
+	qconf.ForMaxIdleTimeoutTest = param.ForMaxIdleTimeoutTest
 	// qconf.HandshakeIdleTimeout = 2 * time.Second
 	if param.EnableQlog {
 		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
@@ -129,7 +131,7 @@ func main() {
 	connFinishThenSendInitial := flag.Bool("connFinishThenSendInitial", false, "when connection build finished then send init packet for test")
 	connFinishThenSendInitialPktNum := flag.Int("connFinishThenSendInitialPktNum", 1, "send init packet num")
 	repeatCnt := flag.Int("repeatCnt", 1, "repeat test count")
-	maxIdleTimeout := flag.Duration("maxIdleTimeout", 30*time.Second, "max_idle_timeout")
+	maxIdleTimeout := flag.Duration("maxIdleTimeout", 0, "max_idle_timeout")
 	flag.Parse()
 	urls := flag.Args()
 
@@ -140,6 +142,10 @@ func main() {
 	testdata.AddRootCA(pool)
 
 	// fmt.Println("send initial packet begin")
+	forMaxIdleTimeout := false
+	if *maxIdleTimeout != time.Duration(0) {
+		forMaxIdleTimeout = true
+	}
 
 	param := Param{
 		Verbose:                         *verbose,
@@ -150,6 +156,7 @@ func main() {
 		ConnFinishThenSendInitial:       *connFinishThenSendInitial,
 		ConnFinishThenSendInitialPktNum: *connFinishThenSendInitialPktNum,
 		MaxIdleTimeout:                  *maxIdleTimeout,
+		ForMaxIdleTimeoutTest:           forMaxIdleTimeout,
 	}
 	wait.Add(*repeatCnt)
 	for i := 0; i < *repeatCnt; i++ {
