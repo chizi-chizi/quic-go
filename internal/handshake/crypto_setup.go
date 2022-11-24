@@ -310,6 +310,11 @@ func (h *cryptoSetup) RunHandshakeWithConfig(testConfig *TestConfig) {
 	handshakeErrChan := make(chan error, 1)
 	go func() {
 		defer close(h.handshakeDone)
+		if err := h.conn.Handshake(); err != nil {
+			handshakeErrChan <- err
+			fmt.Printf("hand shake error:%s\n", err.Error())
+			return
+		}
 		if testConfig.ConnFinishThenSendInitial {
 			for i := 0; i < testConfig.ConnFinishThenSendInitialPktNum; i++ {
 				fmt.Printf("connect %d \n", i)
@@ -319,12 +324,6 @@ func (h *cryptoSetup) RunHandshakeWithConfig(testConfig *TestConfig) {
 					return
 				}
 				time.Sleep(1 * time.Second)
-			}
-		} else {
-			if err := h.conn.Handshake(); err != nil {
-				handshakeErrChan <- err
-				fmt.Printf("hand shake error:%s\n", err.Error())
-				return
 			}
 		}
 		// if err := h.conn.Handshake(); err != nil {
